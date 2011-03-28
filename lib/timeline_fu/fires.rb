@@ -28,6 +28,14 @@ module TimelineFu
             memo
           end
           create_options[:event_type] = event_type.to_s
+          if respond_to?(:project)
+            create_options[:project_id] = project.id
+            if respond_to?(:company)
+              create_options[:company_id] = company.id
+            else
+              create_options[:company_id] = project.company.id
+            end
+          end
 
           TimelineEvent.create!(create_options)
         end
