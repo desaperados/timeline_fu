@@ -3,9 +3,17 @@ module TimelineFu
     def self.included(klass)
       klass.send(:extend, ClassMethods)
     end
+    
+    def destroy_dependents
+      TimelineEvent.where("subject_type = ? AND subject_id = ?", self.class.name, self.id).each do |t|
+        t.destroy
+      end
+    end
 
     module ClassMethods
+      
       def fires(event_type, opts)
+        after_destroy :destroy_dependents
         raise ArgumentError, "Argument :on is mandatory" unless opts.has_key?(:on)
 
         # Array provided, set multiple callbacks
@@ -15,6 +23,7 @@ module TimelineFu
         end
 
         opts[:subject] = :self unless opts.has_key?(:subject)
+        opts[:actor] = :creator unless opts.has_key?(:actor)
 
         method_name = :"fire_#{event_type}_after_#{opts[:on]}"
         define_method(method_name) do
@@ -42,6 +51,7 @@ module TimelineFu
 
         send(:"after_#{opts[:on]}", method_name, :if => opts[:if])
       end
+       
     end
   end
 end
